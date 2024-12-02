@@ -11,10 +11,22 @@ export class EntityService {
     new models.Wall(500, 400),
     new models.Wall(500, 350),
     new models.Wall(500, 300),
+    new models.Wall(650, 500),
+    new models.Wall(650, 450),
+    new models.Wall(650, 400),
+    new models.Wall(650, 350),
+    new models.Wall(550, 300),
+    new models.Wall(600, 300),
+    new models.Wall(650, 300),
+    new models.Coin(600, 400),
   ];
 
   getList(): entity.Entity[] {
     return this.entities;
+  }
+  
+  add(entity: entity.Entity) {
+    this.entities.push(entity);
   }
 
   delete(entity: entity.Entity): boolean {

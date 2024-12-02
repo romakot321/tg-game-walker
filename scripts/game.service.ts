@@ -1,8 +1,11 @@
 import entityModels = require('entity.models');
+import models = require('objects.models');
 import entity = require('entity.service');
 import player = require('player.models');
 import user = require("user.service");
 import drawer = require("drawer.service");
+import joystick = require("joystick");
+import utils = require("utils");
 
 
 export class GameService {
@@ -13,7 +16,7 @@ export class GameService {
   protected userService: user.UserService;
   protected drawerService: drawer.DrawerService;
   protected entityService: entity.EntityService;
-
+  protected joystick: joystick.Joystick;
 
   constructor(userService, entityService, drawerService) {
     this.currentUserEntity = new player.Player(
@@ -26,11 +29,17 @@ export class GameService {
 
     this.pressedKeys = new Set<string>();
     this.animations = [];
+    this.joystick = new joystick.Joystick(document.getElementById("joystick"));
 
     this.initListeners();
   }
 
-  private handleKeypress() {
+  private handleJoystickChange(): void {
+    const directionVector = this.joystick.direction.multiply(this.currentUserEntity.speed);
+    this.currentUserEntity.applyForce(directionVector);
+  }
+
+  private handleKeypress(): void {
     for (let key of this.pressedKeys) {
       switch (key) {
         case 'w':
@@ -80,8 +89,17 @@ export class GameService {
     }
   }
 
+  private generateCoin() {
+    let entity = new models.Coin(
+      utils.getRandomNumber(Math.max(0, this.currentUserEntity.x - window.innerWidth), this.currentUserEntity.x + window.innerWidth),
+      utils.getRandomNumber(Math.max(0, this.currentUserEntity.y - window.innerHeight), this.currentUserEntity.y + window.innerHeight)
+    )
+    this.entityService.add(entity);
+  }
+
   private tick() {
     this.handleKeypress();
+    this.handleJoystickChange();
 
     var entities = this.entityService.getList();
     entities = entities.concat(this.userService.getList());
@@ -91,6 +109,8 @@ export class GameService {
     for (const element of entities) {
       element.update(delta);
       if (element.status == entityModels.EntityStatus.DEAD) {
+        if (element.type == "coin")
+          this.generateCoin();
         this.entityService.delete(element);
         this.addEntityPopAnimation(element);
       }
@@ -115,5 +135,7 @@ export class GameService {
 
   start() {
     this.initUpdator();
+    let enemy = new models.Enemy(500, 500, this.currentUserEntity);
+    this.entityService.add(enemy);
   }
 }

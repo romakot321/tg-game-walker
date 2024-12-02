@@ -1,4 +1,5 @@
 import entity = require("entity.models");
+import utils = require("utils");
 
 
 export class DrawerService {
@@ -7,6 +8,7 @@ export class DrawerService {
   private camera: {x: number, y: number}
   private followed: entity.Entity | null;
   private backgroundImage;
+  private background: Map<number, string>;
 
   constructor() {
     let canvas = document.getElementById('canvas') as
@@ -19,6 +21,9 @@ export class DrawerService {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+
 
     this.canvas = canvas;
     this.context = context;
@@ -27,6 +32,7 @@ export class DrawerService {
     this.followed = null;
     this.backgroundImage = new Image();
     this.backgroundImage.src = 'resources/background.png';
+    this.background = new Map<number, string>();
   }
 
   get xView(): number {
@@ -72,18 +78,30 @@ export class DrawerService {
       this.yView = 0;
   }
 
+  private generateBackground(chunkX: number, chunkY: number): string {
+    let cached = this.background.get(chunkY * 10 + chunkX);
+    console.log(chunkX, chunkY, cached, this.background)
+    if (cached !== undefined) {
+      return cached;
+    }
+    let current = "";
+    for (let i = 0; i < (this.canvas.width / 128) * (this.canvas.height / 128); i++) {
+      current += utils.getRandomNumber(0, 3);
+    }
+    this.background.set(chunkY * 10 + chunkX, current);
+    return current;
+  }
 
   drawBackground() {
     const yCells = this.canvas.height / 128;
     const xCells = this.canvas.width / 128;
     const chunkX = Math.floor(this.followed.x / 128 / xCells);
     const chunkY = Math.floor(this.followed.y / 128 / yCells);
+
     for (let row = chunkX - 1; row <= chunkX + 1; row++) {
       for (let column = chunkY - 1; column <= chunkY + 1; column++) {
         for (let i = 1 * row; i < xCells * (row + 1); i++) {
           for (let j = 1 * column; j < yCells * (column + 1); j++) {
-            const angle = Math.random() * 2 * Math.PI; // Generate a random rotation angle
-
             this.context.save();
             this.context.translate(i * 128 - this.xView, j * 128 - this.yView);
             this.context.drawImage(this.backgroundImage, -64, -64, 128, 128);

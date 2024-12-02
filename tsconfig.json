@@ -6,8 +6,6 @@
         "target": "ES2015",
         "noEmitOnError": true,
         "outDir": "js",
-        "moduleResolution": "node",
-        "allowJs": true
     },
     "files": [
         "scripts/app.ts"

@@ -1,8 +1,5 @@
 {
   "dependencies": {
     "requirejs": "^2.3.7"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.1"
   }
 }
