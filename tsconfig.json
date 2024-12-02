@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "module": "amd",
+        "target": "ES2015",
+        "noEmitOnError": true,
+        "outDir": "js",
+        "moduleResolution": "node",
+        "allowJs": true
+    },
+    "files": [
+        "scripts/app.ts"
+    ]
+}
