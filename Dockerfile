@@ -8,7 +8,8 @@ COPY ./tsconfig.json .
 RUN tsc -p .
 
 FROM nginx:stable-alpine as production-stage
-COPY ./ /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html
+COPY ./ ./
 RUN mkdir js
 COPY --from=builder /usr/walker/js/*.js ./js/
 EXPOSE 80
