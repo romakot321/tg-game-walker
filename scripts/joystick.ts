@@ -18,9 +18,9 @@ export class Joystick {
     this.joystickCenterX = this.joystickElement.offsetLeft + this.joystickRadius;
     this.joystickCenterY = this.joystickElement.offsetTop + this.joystickRadius;
 
-    document.body.addEventListener('touchstart', this.handleTouchStart.bind(this));
-    document.body.addEventListener('touchmove', this.handleTouchMove.bind(this));
-    document.body.addEventListener('touchend', this.handleTouchEnd.bind(this));
+    document.body.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+    document.body.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+    document.body.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
   }
 
   private createJoystickElement(): HTMLElement {
