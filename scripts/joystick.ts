@@ -32,12 +32,13 @@ export class Joystick {
     joystickElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
     joystickElement.style.borderRadius = '50%';
     joystickElement.style.left = `calc(50% - ${this.joystickRadius}px)`;
-    joystickElement.style.top = '50%';
+    joystickElement.style.bottom = '25%';
     this.element.appendChild(joystickElement);
     return joystickElement;
   }
 
   private handleTouchStart(event: TouchEvent): void {
+    event.preventDefault();
     this.startX = event.touches[0].clientX;
     this.startY = event.touches[0].clientY;
     this.currentX = this.startX;
@@ -47,12 +48,14 @@ export class Joystick {
   }
 
   private handleTouchMove(event: TouchEvent): void {
+    event.preventDefault();
     this.currentX = event.touches[0].clientX;
     this.currentY = event.touches[0].clientY;
     this.updateJoystickPosition(this.currentX, this.currentY);
   }
 
   private handleTouchEnd(event: TouchEvent): void {
+    event.preventDefault();
     this.currentX = this.joystickCenterX;
     this.currentY = this.joystickCenterY;
     this.updateJoystickPosition(this.currentX, this.currentY);

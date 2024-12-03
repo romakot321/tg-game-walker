@@ -6,11 +6,15 @@
   --button-text-color: black;
 }
 
-body {
+html {
   overflow-y: hidden;
-  height: 100vh;
+  overscroll-behavior-y: none;
   margin: 0;
   padding: 0;
+}
+
+body {
+  height: 100vh;
   background-color: var(--secondary-background-color);
 }
 
