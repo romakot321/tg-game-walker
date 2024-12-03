@@ -6,12 +6,10 @@
   --button-text-color: black;
 }
 
-html {
-  overscroll-behavior: none;
-}
-
-body {
-  overflow-y: hidden;
+body, html {
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  overflow: hidden;
   height: 100vh;
   margin: 0;
   padding: 0;
