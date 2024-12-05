@@ -8,6 +8,8 @@
         "outDir": "js",
     },
     "files": [
-        "scripts/app.ts"
+        "scripts/app.ts",
+        "scripts/store/store.ts",
+        "scripts/index.ts",
     ]
 }

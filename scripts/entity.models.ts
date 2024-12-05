@@ -75,6 +75,7 @@ export class Entity {
   }
 
   move(direction: 'r' | 'l' | 'u' | 'd'): void {
+    console.log(this, direction)
     var force: utils.Vector2D;
     switch(direction) {
       case 'r':

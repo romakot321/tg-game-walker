@@ -6,6 +6,7 @@ import user = require("user.service");
 import drawer = require("drawer.service");
 import joystick = require("joystick");
 import utils = require("utils");
+import server = require("server.service");
 
 
 export class GameService {
@@ -16,16 +17,19 @@ export class GameService {
   protected userService: user.UserService;
   protected drawerService: drawer.DrawerService;
   protected entityService: entity.EntityService;
+  protected serverService: server.ServerService;
   protected joystick: joystick.Joystick;
 
-  constructor(userService, entityService, drawerService) {
+  constructor(username: string, userService, entityService, drawerService, serverService) {
     this.currentUserEntity = new player.Player(
-      drawerService.widthView / 2,
-      drawerService.heightView / 2,
+      100,
+      100,
+      username
     );
     this.userService = userService;
     this.entityService = entityService;
     this.drawerService = drawerService;
+    this.serverService = serverService;
 
     this.pressedKeys = new Set<string>();
     this.animations = [];
@@ -44,18 +48,34 @@ export class GameService {
       switch (key) {
         case 'w':
           this.currentUserEntity.move('u');
+          this.serverService.sendPlayerMove(this.currentUserEntity.username, 'u', this.currentUserEntity.x, this.currentUserEntity.y);
           break;
         case 'a':
           this.currentUserEntity.move('l');
+          this.serverService.sendPlayerMove(this.currentUserEntity.username, 'l', this.currentUserEntity.x, this.currentUserEntity.y);
           break;
         case 's':
           this.currentUserEntity.move('d');
+          this.serverService.sendPlayerMove(this.currentUserEntity.username, 'd', this.currentUserEntity.x, this.currentUserEntity.y);
           break;
         case 'd':
           this.currentUserEntity.move('r');
+          this.serverService.sendPlayerMove(this.currentUserEntity.username, 'r', this.currentUserEntity.x, this.currentUserEntity.y);
           break;
       }
     }
+  }
+
+  private handlePlace(event) {
+    if (this.currentUserEntity.coins < 5) {
+      return;
+    }
+    this.currentUserEntity.addCoins(-5);
+    var wall = new models.Wall(
+      this.currentUserEntity.x - this.currentUserEntity.x % this.currentUserEntity.size,
+      this.currentUserEntity.y - this.currentUserEntity.y % this.currentUserEntity.size
+    )
+    this.entityService.add(wall);
   }
 
   private initListeners(): void {
@@ -67,6 +87,7 @@ export class GameService {
     document.body.addEventListener('keydown', (event: KeyboardEvent) => {
       this.pressedKeys.add(event.key);
     });
+    document.getElementById("place-button").addEventListener('click', (event) => { this.handlePlace(event) }, false);
   }
 
   private initUpdator() {
@@ -102,7 +123,8 @@ export class GameService {
     this.handleJoystickChange();
 
     var entities = this.entityService.getList();
-    entities = entities.concat(this.userService.getList());
+    var users = this.userService.getList();
+    entities = entities.concat();
     entities = entities.concat([this.currentUserEntity]);
 
     const delta = (performance.now() - this.lastUpdate) / 1000;
@@ -114,9 +136,15 @@ export class GameService {
         this.entityService.delete(element);
         this.addEntityPopAnimation(element);
       }
-      if (element.checkCollision(this.currentUserEntity) && element != this.currentUserEntity) {
+      if (element == this.currentUserEntity)
+        continue
+      if (element.checkCollision(this.currentUserEntity)) {
         element.resolveCollision(this.currentUserEntity);
       }
+      users.forEach((u) => { if (element.checkCollision(u)) { element.resolveCollision(u) } });
+    }
+    for (const user of users) {
+      user.update(delta);
     }
     for (const element of this.animations) {
       element.update(delta);
@@ -125,7 +153,7 @@ export class GameService {
     }
 
     this.drawerService.update();
-    this.drawerService.draw(entities, this.animations);
+    this.drawerService.draw(entities.concat(users), this.animations);
 
     requestAnimationFrame(() => {
       this.tick();
