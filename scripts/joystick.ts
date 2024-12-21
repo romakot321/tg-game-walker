@@ -12,9 +12,10 @@ export class Joystick {
   private joystickCenterY: number;
   private joystickRadius: number = 25; // Radius of the joystick
   private isTouching: boolean = false;
+  private isActive: boolean = true;
 
-  constructor(private element: HTMLElement) {
-    this.joystickElement = this.createJoystickElement();
+  constructor(element: HTMLElement) {
+    this.joystickElement = this.createJoystickElement(element);
     this.joystickCenterX = this.joystickElement.offsetLeft + this.joystickRadius;
     this.joystickCenterY = this.joystickElement.offsetTop + this.joystickRadius;
 
@@ -23,7 +24,7 @@ export class Joystick {
     document.body.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
   }
 
-  private createJoystickElement(): HTMLElement {
+  private createJoystickElement(parentElement: HTMLElement): HTMLElement {
     const joystickElement = document.createElement('div');
     joystickElement.classList.add('joystick');
     joystickElement.style.position = 'absolute';
@@ -32,22 +33,30 @@ export class Joystick {
     joystickElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
     joystickElement.style.borderRadius = '50%';
     joystickElement.style.left = `calc(50% - ${this.joystickRadius}px)`;
-    joystickElement.style.bottom = '25%';
-    this.element.appendChild(joystickElement);
+    joystickElement.style.top = '75%';
+    joystickElement.style.visibility = 'hidden';
+    parentElement.appendChild(joystickElement);
     return joystickElement;
   }
 
   private handleTouchStart(event: TouchEvent): void {
+    if (!this.isActive)
+      return;
     event.preventDefault();
     this.startX = event.touches[0].clientX;
     this.startY = event.touches[0].clientY;
     this.currentX = this.startX;
     this.currentY = this.startY;
+    this.joystickCenterX = this.currentX;
+    this.joystickCenterY = this.currentY;
+    this.joystickElement.style.visibility = 'visible';
     this.updateJoystickPosition(this.startX, this.startY);
     this.isTouching = true;
   }
 
   private handleTouchMove(event: TouchEvent): void {
+    if (!this.isActive)
+      return;
     event.preventDefault();
     this.currentX = event.touches[0].clientX;
     this.currentY = event.touches[0].clientY;
@@ -55,9 +64,12 @@ export class Joystick {
   }
 
   private handleTouchEnd(event: TouchEvent): void {
+    if (!this.isActive)
+      return;
     event.preventDefault();
     this.currentX = this.joystickCenterX;
     this.currentY = this.joystickCenterY;
+    this.joystickElement.style.visibility = 'hidden';
     this.updateJoystickPosition(this.currentX, this.currentY);
     this.isTouching = false;
   }
@@ -89,17 +101,17 @@ export class Joystick {
     const x = Math.cos(angle);
     const y = Math.sin(angle);
     return new utils.Vector2D(x, y);
-    this.onJoystickMove(x, y, distance / this.joystickRadius, '')
   }
 
-  onJoystickMove(x: number, y: number, magnitude: number, direction: string): void {
-    console.log(`Joystick moved: x=${x}, y=${y}, magnitude=${magnitude}, direction=${direction}`);
-    // Implement your game logic here
+  disable(): void {
+    this.isActive = false;
+    this.joystickElement.style.visibility = 'hidden';
+    console.log("joystick disabled");
   }
 
-
-  onJoystickIdle(): void {
-    console.log('Joystick is idle');
-    // Implement your game logic here
+  enable(): void {
+    this.isActive = true;
+    this.joystickElement.style.visibility = 'visible';
+    console.log("joystick enabled");
   }
 }

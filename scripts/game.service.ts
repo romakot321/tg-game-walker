@@ -106,6 +106,7 @@ export class GameService {
     if (!utils.checkPointInRect({x: cursorX, y: cursorY}, wallButtonRect))
       return;
     this.wallButton.style.visibility = "hidden";
+    this.joystick.disable();
 
     this.pressedKeys.add("click");
 
@@ -123,6 +124,7 @@ export class GameService {
       return;
     this.pressedKeys.delete("click");
     this.wallButton.style.visibility = "visible";
+    this.joystick.enable();
 
     var placeX = 0, placeY = 0;
     for (let animation of this.animations) {
