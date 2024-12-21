@@ -41,20 +41,16 @@ body, html {
   color: var(--button-text-color);
 }
 
-#place-button {
+#wall-button {
   position: absolute;
   left: 20px;
   bottom: 20px;
-  width: 5vw;
-  height: 5vw;
+  width: 7vw;
+  height: 7vw;
 
-  border: 1px var(--button-color) solid;
-  border-radius: 50%;
-  background-color: var(--secondary-background-color);
-  padding: 5px;
-  color: var(--button-text-color);
+  border: 1px black solid;
 }
-#place-button:hover {
+#wall-button:hover {
   border: 1.5px var(--button-color) solid;
 }
 

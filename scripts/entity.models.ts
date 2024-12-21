@@ -95,14 +95,14 @@ export class Entity {
     this.applyForce(force);
   }
 
-  private checkCircleCollision(other: Entity): boolean {
+  private checkCircleCollision(other: Entity | Animation): boolean {
     const distance = Math.sqrt(
       Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2)
     );
     return distance <= this.size + other.size;
   }
 
-  private checkRectCollision(other: Entity): boolean {
+  private checkRectCollision(other: Entity | Animation): boolean {
     return (
       this.x < other.x + other.size &&
       this.x + this.size > other.x &&
@@ -111,7 +111,7 @@ export class Entity {
     );
   }
 
-  static checkRectWithCircleCollision(rect: Entity, circle: Entity): boolean {
+  static checkRectWithCircleCollision(rect: Entity | Animation, circle: Entity | Animation): boolean {
     const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.size));
     const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.size));
     const distance = Math.sqrt((circle.x - closestX) ** 2 + (circle.y - closestY) ** 2);
@@ -135,7 +135,7 @@ export class Entity {
     return cornerDistance_sq <= Math.pow(circle.size, 2);
   }
 
-  checkCollision(other: Entity): boolean {
+  checkCollision(other: Entity | Animation): boolean {
     if (this.isCircle && other.isCircle) { return this.checkCircleCollision(other) }
     if (this.isRect && other.isRect) { return this.checkRectCollision(other) }
     if (this.isRect && other.isCircle) { return Entity.checkRectWithCircleCollision(this, other) }
@@ -216,6 +216,12 @@ export class Animation {
     this.startSize = size;
   }
 
+  get isCircle(): boolean { return this.form == AnimationForm.circle; }
+  get isRect(): boolean { return this.form == AnimationForm.rect; }
+
+  get centerx(): number { return this.x + this.size; }
+  get centery(): number { return this.y + this.size; }
+
   static fromEntity(entity: Entity): Animation {
     var form: AnimationForm;
     if (entity.isCircle)
@@ -251,5 +257,27 @@ export class PopAnimation extends Animation {
     this.y += this.speed * deltaTime * 0.5;
     if (this.size / this.startSize >= 2) 
       this.status = AnimationStatus.FINISHED;
+  }
+}
+
+export class PlaceAnimation extends Animation {
+  private static dragColor: string = "#1010aa"
+  private static errorColor: string = "#aa1010"
+
+  constructor(x: number, y: number, size: number) {
+    super(x, y, size, AnimationForm.rect, PlaceAnimation.dragColor);
+  }
+
+  onError(): void {
+    this.color = PlaceAnimation.errorColor;
+  }
+  onNormal(): void {
+    this.color = PlaceAnimation.dragColor;
+  }
+
+  update(deltaTime: number): void {}
+
+  draw(ctx: CanvasRenderingContext2D, xView: number, yView: number): void {
+    super.draw(ctx, 0, 0)
   }
 }

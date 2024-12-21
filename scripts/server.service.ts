@@ -27,15 +27,18 @@ interface Message {
 
 
 export class ServerService {
-  private connection: WebSocket;
+  private connection: WebSocket | null;
   protected userService: user.UserService;
   public isConnected: boolean = false;
 
   constructor(address: string, userService: user.UserService) {
-    this.connection = new WebSocket('wss://' + address + "/ws")
     this.userService = userService;
-
-    this.initHandlers();
+    if (address.length != 0) {
+      this.connection = new WebSocket('wss://' + address + "/ws")
+      this.initHandlers();
+    } else {
+      this.connection = null;
+    }
   }
 
   private initHandlers() {
@@ -69,11 +72,15 @@ export class ServerService {
   }
 
   public sendPlayerMove(username: string, direction: 'l' | 'r' | 'u' | 'd', x: number, y: number): void {
+    if (this.connection == null)
+      return;
     let msg: Message = {event: MessageEvent.MOVE, data: {move: direction, username: username, x: x, y: y}};
     this.sendMessage(msg)
   }
 
   public sendPlayer(username: string, x: number, y: number): void {
+    if (this.connection == null)
+      return;
     let msg: Message = {event: MessageEvent.INIT, data: {x: x, y: y, username: username}};
     this.sendMessage(msg)
   }

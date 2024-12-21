@@ -1,3 +1,5 @@
+export type Rect = {left: number, right: number, bottom: number, top: number}
+
 export class Vector2D {
   x: number;
   y: number;
@@ -47,4 +49,13 @@ export class Vector2D {
 
 export function getRandomNumber(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function checkPointInRect(point: {x: number, y: number}, rect: Rect): boolean {
+  if (rect.left < point.x && point.x < rect.right) {
+    if (rect.top < point.y && point.y < rect.bottom) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -19,6 +19,7 @@ export class GameService {
   protected entityService: entity.EntityService;
   protected serverService: server.ServerService;
   protected joystick: joystick.Joystick;
+  protected wallButton: HTMLElement;
 
   constructor(username: string, userService, entityService, drawerService, serverService) {
     this.currentUserEntity = new player.Player(
@@ -34,6 +35,7 @@ export class GameService {
     this.pressedKeys = new Set<string>();
     this.animations = [];
     this.joystick = new joystick.Joystick(document.getElementById("joystick"));
+    this.wallButton = document.getElementById("wall-button");
 
     this.initListeners();
   }
@@ -66,28 +68,94 @@ export class GameService {
     }
   }
 
-  private handlePlace(event) {
-    if (this.currentUserEntity.coins < 5) {
+  private handleCursorMove(event: MouseEvent | TouchEvent) {
+    if (!this.pressedKeys.has("click"))
       return;
+    if (window.TouchEvent && event instanceof TouchEvent) {
+      var cursorX = event.touches[0].clientX;
+      var cursorY = event.touches[0].clientY;
+    } else if (event instanceof MouseEvent) {
+      var cursorX = event.pageX;
+      var cursorY = event.pageY;
     }
-    this.currentUserEntity.addCoins(-5);
-    var wall = new models.Wall(
-      this.currentUserEntity.x - this.currentUserEntity.x % this.currentUserEntity.size,
-      this.currentUserEntity.y - this.currentUserEntity.y % this.currentUserEntity.size
-    )
-    this.entityService.add(wall);
+
+    for (let animation of this.animations) {
+      if (animation instanceof entityModels.PlaceAnimation) {
+        if (this.currentUserEntity.coins < 5)
+          animation.onError()
+        animation.x = (cursorX + this.drawerService.xView - (cursorX + this.drawerService.xView) % 50) - this.drawerService.xView;
+        animation.y = (cursorY + this.drawerService.yView - (cursorY + this.drawerService.yView) % 50) - this.drawerService.yView;
+        break;
+      }
+    }
+  }
+
+  private handleCursorPressed(event: MouseEvent | TouchEvent) {
+    if (this.pressedKeys.has("click"))
+      return;
+
+    if (window.TouchEvent && event instanceof TouchEvent) {
+      var cursorX = event.touches[0].clientX;
+      var cursorY = event.touches[0].clientY;
+    } else if (event instanceof MouseEvent) {
+      var cursorX = event.pageX;
+      var cursorY = event.pageY;
+    }
+
+    var wallButtonRect = this.wallButton.getBoundingClientRect();
+    if (!utils.checkPointInRect({x: cursorX, y: cursorY}, wallButtonRect))
+      return;
+    this.wallButton.style.visibility = "hidden";
+
+    this.pressedKeys.add("click");
+
+    var anim = new entityModels.PlaceAnimation(0, 0, 50)
+    anim.x = (cursorX + this.drawerService.xView - (cursorX + this.drawerService.xView) % 50) - this.drawerService.xView;
+    anim.y = (cursorY + this.drawerService.yView - (cursorY + this.drawerService.yView) % 50) - this.drawerService.yView;
+    if (this.currentUserEntity.coins < 5)
+      anim.onError()
+
+    this.animations.push(anim);
+  }
+
+  private handleCursorRelease(event: MouseEvent | TouchEvent) {
+    if (!this.pressedKeys.has("click"))
+      return;
+    this.pressedKeys.delete("click");
+    this.wallButton.style.visibility = "visible";
+
+    var placeX = 0, placeY = 0;
+    for (let animation of this.animations) {
+      if (animation instanceof entityModels.PlaceAnimation) {
+        placeX = animation.x + this.drawerService.xView;
+        placeY = animation.y + this.drawerService.yView;
+        this.animations.splice(this.animations.indexOf(animation, 0), 1);
+        break;
+      }
+    }
+
+    if (this.currentUserEntity.coins >= 5) {
+      var wall = new models.Wall(placeX, placeY)
+      this.entityService.add(wall);
+      this.currentUserEntity.addCoins(-5);
+    }
   }
 
   private initListeners(): void {
     document.body.addEventListener('keyup', (event: KeyboardEvent) => {
-      if (this.pressedKeys.has(event.key)) {
+      if (this.pressedKeys.has(event.key))
         this.pressedKeys.delete(event.key);
-      }
     });
     document.body.addEventListener('keydown', (event: KeyboardEvent) => {
       this.pressedKeys.add(event.key);
     });
-    document.getElementById("place-button").addEventListener('click', (event) => { this.handlePlace(event) }, false);
+
+    document.body.addEventListener('mousedown', this.handleCursorPressed.bind(this));
+    document.body.addEventListener('mouseup', this.handleCursorRelease.bind(this));
+    document.body.addEventListener('mousemove', this.handleCursorMove.bind(this));
+    document.body.addEventListener('touchstart', this.handleCursorPressed.bind(this));
+    document.body.addEventListener('touchend', this.handleCursorRelease.bind(this));
+    document.body.addEventListener('touchmove', this.handleCursorMove.bind(this));
   }
 
   private initUpdator() {

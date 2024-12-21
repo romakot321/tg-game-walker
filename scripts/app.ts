@@ -37,7 +37,7 @@ function init() {
   userService = new user.UserService(username);
   drawerService = new drawer.DrawerService();
   entityService = new entity.EntityService();
-  serverService = new server.ServerService("walker.eramir.ru", userService);
+  serverService = new server.ServerService("", userService);
   gameService = new game.GameService(username, userService, entityService, drawerService, serverService);
 
   gameService.start();
