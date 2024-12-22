@@ -1,4 +1,6 @@
 import entity = require("entity.models");
+import models = require("objects.models");
+import entityRep = require("entity.repository");
 import utils = require("utils");
 
 
@@ -10,7 +12,7 @@ export class DrawerService {
   private backgroundImage;
   private background: Map<number, string>;
 
-  constructor() {
+  constructor(private entityRepository: entityRep.EntityRepository) {
     let canvas = document.getElementById('canvas') as
                  HTMLCanvasElement;
     let context = canvas.getContext("2d");
@@ -57,6 +59,13 @@ export class DrawerService {
     return this.canvas.height;
   }
 
+  get xCells(): number {
+    return this.widthView / 128;
+  }
+  get yCells(): number {
+    return this.heightView / 128;
+  }
+
   setCameraFollower(entity): void {
     this.followed = entity;
   }
@@ -78,17 +87,34 @@ export class DrawerService {
       this.yView = 0;
   }
 
+  private generateStructures(chunkX: number, chunkY: number): void {
+    var seed = utils.getRandomNumber(1, 100);
+    if (seed < 50) {
+      return;
+    } else if (seed <= 100) {
+      var box = new models.Box(
+        utils.getRandomNumber(chunkX * 128 * this.xCells, (chunkX + 1) * 128 * this.xCells),
+        utils.getRandomNumber(chunkY * 128 * this.yCells, (chunkY + 1) * 128 * this.yCells)
+      );
+      this.entityRepository.add(box);
+    }
+  }
+
   private generateBackground(chunkX: number, chunkY: number): string {
-    let cached = this.background.get(chunkY * 10 + chunkX);
-    console.log(chunkX, chunkY, cached, this.background)
+    let cached = this.background.get(chunkY * 1000 + chunkX);
     if (cached !== undefined) {
       return cached;
     }
+    console.log("generate chunk");
+
     let current = "";
     for (let i = 0; i < (this.canvas.width / 128) * (this.canvas.height / 128); i++) {
       current += utils.getRandomNumber(0, 3);
     }
-    this.background.set(chunkY * 10 + chunkX, current);
+    this.background.set(chunkY * 1000 + chunkX, current);
+
+    this.generateStructures(chunkX, chunkY);
+
     return current;
   }
 
@@ -97,6 +123,7 @@ export class DrawerService {
     const xCells = this.canvas.width / 128;
     const chunkX = Math.floor(this.followed.x / 128 / xCells);
     const chunkY = Math.floor(this.followed.y / 128 / yCells);
+    this.generateBackground(chunkX, chunkY);
 
     for (let row = chunkX - 1; row <= chunkX + 1; row++) {
       for (let column = chunkY - 1; column <= chunkY + 1; column++) {
@@ -110,7 +137,6 @@ export class DrawerService {
         }
       }
     }
-    
   }
 
   draw(entities: entity.Entity[], animations: entity.Animation[]) {

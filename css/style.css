@@ -23,6 +23,9 @@ body, html {
   width: 100%;
   height: 100vh;
   z-index: 1;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  overflow: hidden;
 }
 
 .ui-container {
@@ -45,13 +48,13 @@ body, html {
   position: absolute;
   left: 20px;
   bottom: 20px;
-  width: 7vw;
-  height: 7vw;
+  width: max(5vw, 7vh);
+  height: max(5vw, 7vh);
 
   border: 1px black solid;
 }
 #wall-button:hover {
-  border: 1.5px var(--button-color) solid;
+  border: 2.5px black solid;
 }
 
 #coins {

@@ -5,7 +5,7 @@ import utils = require('utils');
 export class Wall extends entity.Entity {
   public size: number = 50;
   static color: string = "black"
-  
+
   constructor(x: number, y: number) {
     super(x, y, "wall");
   }
@@ -20,10 +20,57 @@ export class Wall extends entity.Entity {
   }
 }
 
+var boxImage = new Image(50, 50);
+boxImage.src = "resources/box.png";
+
+export class Box extends entity.Entity {
+  public size: number = 50;
+  static color: string = "#A1662F"
+  static image = boxImage;
+  private static damageCooldown: number = 0.5;
+
+  private health: number;
+  private lastDamageTime: number;
+
+  constructor(x: number, y: number) {
+    super(x, y, "box");
+
+    this.health = 9;
+    this.lastDamageTime = performance.now();
+  }
+
+  draw(ctx: CanvasRenderingContext2D, xView: number, yView: number): void {
+    var prevLineWidth = ctx.lineWidth;
+    ctx.strokeStyle = Box.color;
+    ctx.lineWidth = this.health;
+
+    ctx.drawImage(Box.image, this.x - xView, this.y - yView, this.size, this.size);
+    ctx.beginPath();
+    ctx.rect(this.x - xView, this.y - yView, this.size, this.size);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.lineWidth = prevLineWidth;
+  }
+
+  resolveCollision(other: playerModel.Player): void {
+    super.resolveCollision(other);
+
+    if ((performance.now() - this.lastDamageTime) / 1000 > Box.damageCooldown) {
+      this.health -= 3;
+      this.lastDamageTime = performance.now();
+    }
+    if (this.health <= 0) {
+      this.status = entity.EntityStatus.DEAD;
+      other.addCoins(utils.getRandomNumber(1, 3));
+    }
+  }
+}
+
 export class Coin extends entity.Entity {
   public size: number = 15;
   static color: string = "yellow"
-  
+
   constructor(x: number, y: number) {
     super(x, y, "coin");
   }
@@ -41,7 +88,6 @@ export class Coin extends entity.Entity {
     if (other.type !== "player" || this.status == entity.EntityStatus.DEAD) { return; }
     other.addCoins(1);
     this.status = entity.EntityStatus.DEAD;
-    console.log("coins", other.coins);
   }
 }
 
@@ -53,7 +99,7 @@ export class Enemy extends entity.Entity {
   private followed: entity.Entity;
 
   static color: string = "darkred"
-  
+
   constructor(x: number, y: number, followed: entity.Entity) {
     super(x, y, "enemy");
     this.followed = followed;

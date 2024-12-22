@@ -1,41 +1,60 @@
 import models = require('objects.models');
 import entity = require("entity.models");
+import utils = require("utils");
+import repository = require("entity.repository");
+import animation = require("animation.repository");
 
 
 export class EntityService {
-  private entities: entity.Entity[] = [
-    new models.Coin(30, 100),
-    new models.Coin(100, 100),
-    new models.Wall(500, 500),
-    new models.Wall(500, 450),
-    new models.Wall(500, 400),
-    new models.Wall(500, 350),
-    new models.Wall(500, 300),
-    new models.Wall(650, 500),
-    new models.Wall(650, 450),
-    new models.Wall(650, 400),
-    new models.Wall(650, 350),
-    new models.Wall(550, 300),
-    new models.Wall(600, 300),
-    new models.Wall(650, 300),
-    new models.Coin(600, 400),
-  ];
+  constructor(
+      private entityRepository: repository.EntityRepository,
+      private animationRepository: animation.AnimationRepository,
+  ) {
 
-  getList(): entity.Entity[] {
-    return this.entities;
-  }
-  
-  add(entity: entity.Entity) {
-    this.entities.push(entity);
   }
 
-  delete(entity: entity.Entity): boolean {
-    for (const el of this.entities) {
-      if (entity == el) {
-        this.entities.splice(this.entities.indexOf(el, 0), 1);
-        return true;
+  tick(delta: number): entity.Entity[] {
+    var entities = this.entityRepository.getList();
+
+    for (const element of entities) {
+      element.update(delta);
+      if (element.status == entity.EntityStatus.DEAD) {
+        if (element.type == "coin")
+          this.generateCoin(element.x, element.y);
+        this.entityRepository.delete(element);
+        this.addEntityPopAnimation(element);
       }
     }
-    return false;
+
+    return entities;
+  }
+
+  resolveCollisions(collideEntities: entity.Entity[]): void {
+    var entities = this.entityRepository.getList();
+
+    for (const element of collideEntities) {
+      for (const entity of entities) {
+        if (entity.checkCollision(element)) {
+          entity.resolveCollision(element);
+        }
+      }
+    }
+  }
+
+  add(model: entity.Entity): void {
+    this.entityRepository.add(model);
+  }
+
+  private generateCoin(centerX, centerY) {
+    let entity = new models.Coin(
+      utils.getRandomNumber(Math.max(0, centerX - window.innerWidth), centerX + window.innerWidth),
+      utils.getRandomNumber(Math.max(0, centerY - window.innerHeight), centerY + window.innerHeight)
+    )
+    this.entityRepository.add(entity);
+  }
+
+  private addEntityPopAnimation(e: entity.Entity) {
+    const animation = entity.PopAnimation.fromEntity(e);
+    this.animationRepository.add(animation);
   }
 }

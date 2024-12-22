@@ -1,6 +1,7 @@
 import entityModels = require('entity.models');
 import models = require('objects.models');
 import entity = require('entity.service');
+import animation = require('animation.repository');
 import player = require('player.models');
 import user = require("user.service");
 import drawer = require("drawer.service");
@@ -13,27 +14,24 @@ export class GameService {
   private currentUserEntity: player.Player;
   private lastUpdate: number;
   private pressedKeys: Set<string>;
-  private animations: entityModels.Animation[];
-  protected userService: user.UserService;
-  protected drawerService: drawer.DrawerService;
-  protected entityService: entity.EntityService;
-  protected serverService: server.ServerService;
   protected joystick: joystick.Joystick;
   protected wallButton: HTMLElement;
 
-  constructor(username: string, userService, entityService, drawerService, serverService) {
+  constructor(
+        username: string,
+        protected userService: user.UserService,
+        protected entityService: entity.EntityService,
+        protected animationRepository: animation.AnimationRepository,
+        protected drawerService: drawer.DrawerService,
+        protected serverService: server.ServerService
+  ) {
     this.currentUserEntity = new player.Player(
       100,
       100,
       username
     );
-    this.userService = userService;
-    this.entityService = entityService;
-    this.drawerService = drawerService;
-    this.serverService = serverService;
 
     this.pressedKeys = new Set<string>();
-    this.animations = [];
     this.joystick = new joystick.Joystick(document.getElementById("joystick"));
     this.wallButton = document.getElementById("wall-button");
 
@@ -79,14 +77,12 @@ export class GameService {
       var cursorY = event.pageY;
     }
 
-    for (let animation of this.animations) {
-      if (animation instanceof entityModels.PlaceAnimation) {
-        if (this.currentUserEntity.coins < 5)
-          animation.onError()
-        animation.x = (cursorX + this.drawerService.xView - (cursorX + this.drawerService.xView) % 50) - this.drawerService.xView;
-        animation.y = (cursorY + this.drawerService.yView - (cursorY + this.drawerService.yView) % 50) - this.drawerService.yView;
-        break;
-      }
+    var placeAnimations = this.animationRepository.getPlaceAnimations();
+    for (let animation of placeAnimations) {
+      if (this.currentUserEntity.coins < 5)
+        animation.onError()
+      animation.x = (cursorX + this.drawerService.xView - (cursorX + this.drawerService.xView) % 50) - this.drawerService.xView;
+      animation.y = (cursorY + this.drawerService.yView - (cursorY + this.drawerService.yView) % 50) - this.drawerService.yView;
     }
   }
 
@@ -116,7 +112,7 @@ export class GameService {
     if (this.currentUserEntity.coins < 5)
       anim.onError()
 
-    this.animations.push(anim);
+    this.animationRepository.add(anim)
   }
 
   private handleCursorRelease(event: MouseEvent | TouchEvent) {
@@ -127,11 +123,11 @@ export class GameService {
     this.joystick.enable();
 
     var placeX = 0, placeY = 0;
-    for (let animation of this.animations) {
+    for (let animation of this.animationRepository.getList()) {
       if (animation instanceof entityModels.PlaceAnimation) {
         placeX = animation.x + this.drawerService.xView;
         placeY = animation.y + this.drawerService.yView;
-        this.animations.splice(this.animations.indexOf(animation, 0), 1);
+        this.animationRepository.delete(animation);
         break;
       }
     }
@@ -166,64 +162,24 @@ export class GameService {
     this.tick();
   }
 
-  private addEntityPopAnimation(entity: entityModels.Entity) {
-    const animation = entityModels.PopAnimation.fromEntity(entity);
-    this.animations.push(animation);
-  }
-
-  private deleteAnimation(animation: entityModels.Animation): void {
-    for (const el of this.animations) {
-      if (animation == el) {
-        this.animations.splice(this.animations.indexOf(el, 0), 1);
-        return;
-      }
-    }
-  }
-
-  private generateCoin() {
-    let entity = new models.Coin(
-      utils.getRandomNumber(Math.max(0, this.currentUserEntity.x - window.innerWidth), this.currentUserEntity.x + window.innerWidth),
-      utils.getRandomNumber(Math.max(0, this.currentUserEntity.y - window.innerHeight), this.currentUserEntity.y + window.innerHeight)
-    )
-    this.entityService.add(entity);
-  }
-
   private tick() {
     this.handleKeypress();
     this.handleJoystickChange();
 
-    var entities = this.entityService.getList();
-    var users = this.userService.getList();
-    entities = entities.concat();
-    entities = entities.concat([this.currentUserEntity]);
-
     const delta = (performance.now() - this.lastUpdate) / 1000;
-    for (const element of entities) {
+    console.log(1 / delta);
+    var entities = this.entityService.tick(delta);
+    var users = this.userService.getList();
+    users = users.concat([this.currentUserEntity]);
+
+    for (const element of users) {
       element.update(delta);
-      if (element.status == entityModels.EntityStatus.DEAD) {
-        if (element.type == "coin")
-          this.generateCoin();
-        this.entityService.delete(element);
-        this.addEntityPopAnimation(element);
-      }
-      if (element == this.currentUserEntity)
-        continue
-      if (element.checkCollision(this.currentUserEntity)) {
-        element.resolveCollision(this.currentUserEntity);
-      }
-      users.forEach((u) => { if (element.checkCollision(u)) { element.resolveCollision(u) } });
     }
-    for (const user of users) {
-      user.update(delta);
-    }
-    for (const element of this.animations) {
-      element.update(delta);
-      if (element.status == entityModels.AnimationStatus.FINISHED)
-        this.deleteAnimation(element);
-    }
+    this.entityService.resolveCollisions(users);
+    var animations = this.animationRepository.tick(delta)
 
     this.drawerService.update();
-    this.drawerService.draw(entities.concat(users), this.animations);
+    this.drawerService.draw(entities.concat(users), animations);
 
     requestAnimationFrame(() => {
       this.tick();
@@ -233,7 +189,5 @@ export class GameService {
 
   start() {
     this.initUpdator();
-    let enemy = new models.Enemy(500, 500, this.currentUserEntity);
-    this.entityService.add(enemy);
   }
 }

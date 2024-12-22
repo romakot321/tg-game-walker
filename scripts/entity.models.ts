@@ -7,7 +7,7 @@ export enum EntityStatus {
 
 export class Entity {
   public size: number = 20;
-  public speed: number = 1000;
+  public speed: number = 5000;
   public mass: number = 1;
   public damping: number = 5.0;
   public x: number;
@@ -29,11 +29,11 @@ export class Entity {
   }
 
   get isCircle(): boolean {
-    return this.type != "wall";
+    return this.type != "wall" && this.type != "box";
   }
 
   get isRect(): boolean {
-    return this.type == "wall";
+    return this.type == "wall" || this.type == "box";
   }
 
   get isCollectable(): boolean {
@@ -75,7 +75,6 @@ export class Entity {
   }
 
   move(direction: 'r' | 'l' | 'u' | 'd'): void {
-    console.log(this, direction)
     var force: utils.Vector2D;
     switch(direction) {
       case 'r':

@@ -1,16 +1,12 @@
 import user = require("user.service");
 import drawer = require("drawer.service");
-import entity = require("entity.service");
+import entityRepository = require("entity.repository");
+import animationRepository = require("animation.repository");
+import entityService = require("entity.service");
 import game = require("game.service")
 import server = require("server.service");
 
 var dataElement = document.getElementById("data");
-
-var userService: user.UserService;
-var drawerService: drawer.DrawerService;
-var entityService: entity.EntityService;
-var gameService: game.GameService;
-var serverService: server.ServerService;
 
 declare global {
   interface Window {
@@ -34,11 +30,13 @@ function init() {
   disableScrolling();
   let username = Math.random().toString();
 
-  userService = new user.UserService(username);
-  drawerService = new drawer.DrawerService();
-  entityService = new entity.EntityService();
-  serverService = new server.ServerService("", userService);
-  gameService = new game.GameService(username, userService, entityService, drawerService, serverService);
+  var entityRep = new entityRepository.EntityRepository();
+  var animationRep = new animationRepository.AnimationRepository();
+  var entityServ = new entityService.EntityService(entityRep, animationRep);
+  var userService = new user.UserService(username);
+  var drawerService = new drawer.DrawerService(entityRep);
+  var serverService = new server.ServerService("", userService);
+  var gameService = new game.GameService(username, userService, entityServ, animationRep, drawerService, serverService);
 
   gameService.start();
 }
