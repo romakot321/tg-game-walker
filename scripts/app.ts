@@ -32,10 +32,10 @@ function init() {
 
   var entityRep = new entityRepository.EntityRepository();
   var animationRep = new animationRepository.AnimationRepository();
-  var entityServ = new entityService.EntityService(entityRep, animationRep);
   var userService = new user.UserService(username);
+  var serverService = new server.ServerService("walker.eramir.ru", userService, entityRep);
+  var entityServ = new entityService.EntityService(entityRep, animationRep, serverService);
   var drawerService = new drawer.DrawerService(entityRep);
-  var serverService = new server.ServerService("", userService);
   var gameService = new game.GameService(username, userService, entityServ, animationRep, drawerService, serverService);
 
   gameService.start();

@@ -7,7 +7,7 @@ export enum EntityStatus {
 
 export class Entity {
   public size: number = 20;
-  public speed: number = 5000;
+  public speed: number = 1500;
   public mass: number = 1;
   public damping: number = 5.0;
   public x: number;

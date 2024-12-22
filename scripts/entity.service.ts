@@ -3,12 +3,14 @@ import entity = require("entity.models");
 import utils = require("utils");
 import repository = require("entity.repository");
 import animation = require("animation.repository");
+import server = require("server.service");
 
 
 export class EntityService {
   constructor(
       private entityRepository: repository.EntityRepository,
       private animationRepository: animation.AnimationRepository,
+      private serverService: server.ServerService,
   ) {
 
   }
@@ -43,6 +45,7 @@ export class EntityService {
 
   add(model: entity.Entity): void {
     this.entityRepository.add(model);
+    this.serverService.sendNewEntity(model);
   }
 
   private generateCoin(centerX, centerY) {

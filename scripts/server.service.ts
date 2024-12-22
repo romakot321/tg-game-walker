@@ -1,7 +1,11 @@
 import user = require("user.service");
+import entity = require("entity.repository");
+import baseModels = require("entity.models");
+import models = require("objects.models");
 
 enum MessageEvent {
   MOVE = 0,
+  ENTITY = 1,
   INIT = 99,
 }
 
@@ -20,19 +24,29 @@ interface InitData extends MessageData {
   y: number
 }
 
+interface EntityData extends MessageData {
+  x: number
+  y: number
+  type: string
+}
+
 interface Message {
   event: MessageEvent;
-  data: MoveData | InitData | null;
+  data: MoveData | InitData | EntityData | null;
 }
 
 
 export class ServerService {
   private connection: WebSocket | null;
-  protected userService: user.UserService;
   public isConnected: boolean = false;
 
-  constructor(address: string, userService: user.UserService) {
+  constructor(
+        address: string,
+        private userService: user.UserService,
+        private entityRepository: entity.EntityRepository,
+  ) {
     this.userService = userService;
+    this.entityRepository = entityRepository;
     if (address.length != 0) {
       this.connection = new WebSocket('wss://' + address + "/ws")
       this.initHandlers();
@@ -50,6 +64,14 @@ export class ServerService {
     this.connection.send(JSON.stringify(msg));
   }
 
+  private handleNewEntity(data: EntityData) {
+    if (data.type == "box") {
+      this.entityRepository.add(new models.Box(data.x, data.y));
+    } else if (data.type == "wall") {
+      this.entityRepository.add(new models.Wall(data.x, data.y));
+    }
+  }
+
   private handleMessage(event) {
     console.log("Message", event.data);
     let message: Message = JSON.parse(event.data);
@@ -58,6 +80,10 @@ export class ServerService {
         if (!this.userService.update(message.data as MoveData)) {
           this.userService.add({x: 0, y: 0, username: message.data.username})
         }
+        break;
+
+      case MessageEvent.ENTITY:
+        this.handleNewEntity(message.data as EntityData);
         break;
 
       default:
@@ -83,5 +109,12 @@ export class ServerService {
       return;
     let msg: Message = {event: MessageEvent.INIT, data: {x: x, y: y, username: username}};
     this.sendMessage(msg)
+  }
+
+  public sendNewEntity(entity: baseModels.Entity): void {
+    if (this.connection == null)
+      return;
+    let msg: Message = {event: MessageEvent.ENTITY, data: {type: entity.type, x: entity.x, y: entity.y, username: ""}};
+    this.sendMessage(msg);
   }
 }

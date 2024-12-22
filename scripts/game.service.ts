@@ -167,7 +167,6 @@ export class GameService {
     this.handleJoystickChange();
 
     const delta = (performance.now() - this.lastUpdate) / 1000;
-    console.log(1 / delta);
     var entities = this.entityService.tick(delta);
     var users = this.userService.getList();
     users = users.concat([this.currentUserEntity]);
